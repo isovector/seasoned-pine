@@ -61,13 +61,19 @@ type family Sel f a where
 class GGetCoeffects s g o where
   ggetCoeffects :: (s Identity -> g p) -> o p
 
+instance GGetCoeffects s V1 V1 where
+  ggetCoeffects = undefined
+
+instance GGetCoeffects s U1 U1 where
+  ggetCoeffects = const U1
+
 instance GGetCoeffects s g o => GGetCoeffects s (M1 i c g) (M1 i c' o) where
   ggetCoeffects sel = M1 $ ggetCoeffects @s @g @o $ (\(M1 x) -> x) C.. sel
 
 instance {-# OVERLAPPING #-} KnownSymbol name
     => GGetCoeffects s (M1 S ('MetaSel ('Just name) _a _b _c) (K1 R z))
-                        (M1 S ('MetaSel ('Just name) _a _b _c)
-                          (K1 R (IxF [String] (s Identity) z))) where
+                       (M1 S ('MetaSel ('Just name) _a _b _c)
+                         (K1 R (IxF [String] (s Identity) z))) where
   ggetCoeffects sel = M1 $ K1 $ tagged [symbolVal $ Proxy @name] $ \si ->
     case sel si of M1 (K1 x) -> x
 
