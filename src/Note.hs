@@ -1,10 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 
@@ -39,7 +40,7 @@ b . a = juice b C.. juice a
 data IxF z a b = IxF
   { runIxF :: a -> b
   , ixfC :: z
-  }
+  } deriving (Generic)
 
 instance Monoid z => C.Category (IxF z) where
   id = IxF C.id mempty
@@ -49,11 +50,6 @@ instance Monoid z => C.Category (IxF z) where
 tagged :: z -> (a -> b) -> IxF z a b
 tagged = flip IxF
 
-data Note = Note
-
-name :: IxF String a String
-name = tagged "name" $ const "hello"
-
 getTags :: LiftJuice z s => s a b -> z
 getTags = ixfC C.. juice
 
@@ -62,24 +58,31 @@ type family Sel f a where
   Sel Identity a = a
   Sel f a = f a
 
-data X f = X { getFoo :: Sel f String }
-  deriving Generic
+class GGetCoeffects s g o where
+  ggetCoeffects :: (s Identity -> g p) -> o p
 
-class GetCoeffects s where
-  getCoeffects :: s (IxF [String] (s Identity))
+instance GGetCoeffects s g o => GGetCoeffects s (M1 i c g) (M1 i c' o) where
+  ggetCoeffects sel = M1 $ ggetCoeffects @s @g @o $ (\(M1 x) -> x) C.. sel
 
-class GGetCoeffects (f :: * -> *) g where
-  ggetCoeffects :: g p
+instance {-# OVERLAPPING #-} KnownSymbol name
+    => GGetCoeffects s (M1 S ('MetaSel ('Just name) _a _b _c) (K1 R z))
+                        (M1 S ('MetaSel ('Just name) _a _b _c)
+                          (K1 R (IxF [String] (s Identity) z))) where
+  ggetCoeffects sel = M1 $ K1 $ tagged [symbolVal $ Proxy @name] $ \si ->
+    case sel si of M1 (K1 x) -> x
 
-instance (GGetCoeffects f f', GGetCoeffects g g') => GGetCoeffects (f :*: g) (f' :*: g') where
-  ggetCoeffects =  ggetCoeffects @f :*: ggetCoeffects @g
+instance (GGetCoeffects s f o, GGetCoeffects s f' o')
+    => GGetCoeffects s (f :*: f') (o :*: o') where
+  ggetCoeffects sel = ggetCoeffects @s @f  @o  ((\(a :*: _) -> a) C.. sel)
+                  :*: ggetCoeffects @s @f' @o' ((\(_ :*: b) -> b) C.. sel)
 
--- instance ( GGetCoeffects f f'
---          -- , f' ~ IxF [String] z
---          , KnownSymbol name
---          )
---     => GGetCoeffects (M1 S ('MetaSel ('Just name) a b c) f)
---                      (M1 S ('MetaSel ('Just name) a b c) (Rep (IxF f'))) where
---   ggetCoeffects = M1 . from . tagged [symbolVal $ Proxy @name] . to $ ggetCoeffects @f
-
+getCoeffects
+    :: forall s si ixf
+     . ( si  ~ s Identity
+       , ixf ~ s (IxF [String] (s Identity))
+       , Generic si
+       , Generic ixf
+       , GGetCoeffects s (Rep si) (Rep ixf)
+       ) => s (IxF [String] (s Identity))
+getCoeffects = to $ ggetCoeffects @s @(Rep (s Identity)) from
 
