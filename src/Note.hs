@@ -14,13 +14,13 @@
 -- types.
 module Note where
 
-import Data.Proxy
-import GHC.TypeLits
-import Data.Functor.Identity
 import qualified Control.Category as C
-import Prelude hiding ((.), id)
-import Data.Monoid ((<>))
-import GHC.Generics
+import           Data.Functor.Identity
+import           Data.Monoid ((<>))
+import           Data.Proxy
+import           GHC.Generics
+import           GHC.TypeLits
+import           Prelude hiding ((.), id)
 
 class LiftJuice z s where
   juice :: s a b -> IxF z a b
@@ -41,6 +41,13 @@ data IxF z a b = IxF
   { runIxF' :: a -> b
   , ixfC :: z
   } deriving (Generic)
+
+instance Functor (IxF z a) where
+  fmap f (IxF f' z) = IxF (f C.. f') z
+
+instance Monoid z => Applicative (IxF z a) where
+  pure a = IxF (pure a) mempty
+  IxF f z <*> IxF f' z' = IxF (f <*> f') (z <> z')
 
 instance Monoid z => C.Category (IxF z) where
   id = IxF C.id mempty
