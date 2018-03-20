@@ -30,21 +30,22 @@ data Card = Card
   }
 
 cardId :: Card -> String
-cardId c = intercalate "->"
+cardId c = intercalate " -> "
          [ intercalate "+" $ getTags $ cardFront c
          , intercalate "+" $ getTags $ cardBack c
          ]
 
-makeCard :: LiftJuice [String] s => s n String -> s n String -> n -> Card
+makeCard :: LiftJuice s => s n String -> s n String -> n -> Card
 makeCard front back n =
-  Card (juice @[String] front N.. const n)
-       (juice @[String] back  N.. const n)
+  Card (juice front N.. const n)
+       (juice back  N.. const n)
 
 runCard :: Card -> IO Difficulty
 runCard c = do
   clearScreen
   putStrLn $ runIxF () $ cardFront c
   dumpLines 6
+  hSetEcho stdin False
   void getChar
 
   clearScreen
@@ -59,6 +60,7 @@ difficultySelector = do
     putStrLn $ show n <> ") " <> show d
 
   fix $ \f -> do
+    hSetEcho stdin False
     str <- pure <$> getChar
     maybe f pure $ do
       x <- fmap fst . listToMaybe $ reads str
@@ -81,7 +83,6 @@ clearScreen = dumpLines 80
 
 someFunc :: IO ()
 someFunc = do
-  hSetEcho stdin False
   hSetBuffering stdin NoBuffering
   print =<< (runCard $ makeCard (const "hello") (const "goodbye") undefined)
 

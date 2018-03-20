@@ -22,18 +22,18 @@ import           GHC.Generics
 import           GHC.TypeLits
 import           Prelude hiding ((.), id)
 
-class LiftJuice z s where
-  juice :: s a b -> IxF z a b
+class LiftJuice s where
+  juice :: s a b -> IxF [String] a b
 
-instance LiftJuice z (IxF z) where
+instance LiftJuice (IxF [String]) where
   juice = C.id
   {-# INLINE juice #-}
 
-instance Monoid z => LiftJuice z (->) where
+instance LiftJuice (->) where
   juice = tagged mempty
   {-# INLINE juice #-}
 
-(.) :: (Monoid z, LiftJuice z s, LiftJuice z t) => t b c -> s a b -> IxF z a c
+(.) :: (LiftJuice s, LiftJuice t) => t b c -> s a b -> IxF [String] a c
 b . a = juice b C.. juice a
 {-# INLINE (.) #-}
 
@@ -60,7 +60,7 @@ runIxF = flip runIxF'
 tagged :: z -> (a -> b) -> IxF z a b
 tagged = flip IxF
 
-getTags :: LiftJuice z s => s a b -> z
+getTags :: LiftJuice s => s a b -> [String]
 getTags = ixfC C.. juice
 
 
