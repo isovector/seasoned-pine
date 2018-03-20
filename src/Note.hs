@@ -38,14 +38,17 @@ b . a = juice b C.. juice a
 {-# INLINE (.) #-}
 
 data IxF z a b = IxF
-  { runIxF :: a -> b
+  { runIxF' :: a -> b
   , ixfC :: z
   } deriving (Generic)
 
 instance Monoid z => C.Category (IxF z) where
   id = IxF C.id mempty
-  b . a = IxF (runIxF b C.. runIxF a)
+  b . a = IxF (runIxF' b C.. runIxF' a)
               (ixfC b <> ixfC a)
+
+runIxF :: a -> IxF z a c -> c
+runIxF = flip runIxF'
 
 tagged :: z -> (a -> b) -> IxF z a b
 tagged = flip IxF
