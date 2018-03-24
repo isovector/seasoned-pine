@@ -15,6 +15,9 @@ description:         Please see the README on Github at <https://github.com/isov
 dependencies:
 - base >= 4.7 && < 5
 - newtype-generics
+- containers
+- time
+- lens
 
 library:
   source-dirs: src

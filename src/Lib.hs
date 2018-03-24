@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 
@@ -8,6 +10,7 @@ import           Control.Monad (void)
 import           Control.Newtype
 import           Data.Foldable (for_)
 import           Data.Function (fix)
+import           Data.Functor.Identity
 import           Data.List (intercalate)
 import           Data.Maybe (listToMaybe, fromJust)
 import           Data.Monoid ((<>), First (..))
@@ -24,32 +27,48 @@ data Difficulty
   | Easy
   deriving (Eq, Ord, Enum, Bounded, Show)
 
-data Card = Card
-  { cardFront :: IxF [String] () String
-  , cardBack  :: IxF [String] () String
+data Card = forall n. IsNote n => Card
+  { cardNote     :: n Identity
+  , cardFrontIxF :: IxF [String] (n Identity) String
+  , cardBackIxF  :: IxF [String] (n Identity) String
   }
 
+cardFront :: Card -> String
+cardFront Card{..} = runIxF cardNote cardFrontIxF
+
+cardBack :: Card -> String
+cardBack Card{..} = runIxF cardNote cardBackIxF
+
 cardId :: Card -> String
-cardId c = intercalate " -> "
-         [ intercalate "+" $ getTags $ cardFront c
-         , intercalate "+" $ getTags $ cardBack c
+cardId Card{..} = (noteId cardNote ++ "/")
+      ++ intercalate ">"
+         [ intercalate "+" $ getTags cardFrontIxF
+         , intercalate "+" $ getTags cardBackIxF
          ]
 
-makeCard :: LiftJuice s => s n String -> s n String -> n -> Card
+makeCard
+    :: ( LiftJuice s
+       , IsNote n
+       )
+    => s (n Identity) String
+    -> s (n Identity) String
+    -> n Identity
+    -> Card
 makeCard front back n =
-  Card (juice front N.. const n)
-       (juice back  N.. const n)
+  Card n
+       (juice front)
+       (juice back)
 
 runCard :: Card -> IO Difficulty
 runCard c = do
   clearScreen
-  putStrLn $ runIxF () $ cardFront c
+  putStrLn $ cardFront c
   dumpLines 6
   hSetEcho stdin False
   void getChar
 
   clearScreen
-  putStrLn $ runIxF () $ cardBack c
+  putStrLn $ cardBack c
   dumpLines 1
   difficultySelector
 
@@ -82,7 +101,5 @@ clearScreen :: IO ()
 clearScreen = dumpLines 80
 
 someFunc :: IO ()
-someFunc = do
-  hSetBuffering stdin NoBuffering
-  print =<< (runCard $ makeCard (const "hello") (const "goodbye") undefined)
+someFunc = pure ()
 
