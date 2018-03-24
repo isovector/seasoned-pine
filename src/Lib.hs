@@ -6,10 +6,11 @@
 
 module Lib where
 
+import           Control.Arrow (first)
 import           Control.Monad (void)
 import           Control.Newtype
 import           Data.Foldable (for_)
-import           Data.Function (fix)
+import           Data.Function (fix, on)
 import           Data.Functor.Identity
 import           Data.List (intercalate)
 import           Data.Maybe (listToMaybe, fromJust)
@@ -33,18 +34,35 @@ data Card = forall n. IsNote n => Card
   , cardBackIxF  :: IxF [String] (n Identity) String
   }
 
+newtype CardId  = CardId {unCardId :: String }
+  deriving (Eq, Ord)
+
+instance Show CardId where
+  show = show . unCardId
+
+instance Read CardId where
+  readsPrec = fmap (fmap $ first CardId) . readsPrec
+
+instance Eq Card where
+  (==) = (==) `on` cardId
+
+instance Ord Card where
+  compare = compare `on` cardId
+
 cardFront :: Card -> String
 cardFront Card{..} = runIxF cardNote cardFrontIxF
 
 cardBack :: Card -> String
 cardBack Card{..} = runIxF cardNote cardBackIxF
 
-cardId :: Card -> String
-cardId Card{..} = (noteId cardNote ++ "/")
-      ++ intercalate ">"
-         [ intercalate "+" $ getTags cardFrontIxF
-         , intercalate "+" $ getTags cardBackIxF
-         ]
+cardId :: Card -> CardId
+cardId Card{..} = CardId $ mconcat
+  [ noteId cardNote
+  , ":"
+  , intercalate "+" $ getTags cardFrontIxF
+  , ">"
+  , intercalate "+" $ getTags cardBackIxF
+  ]
 
 makeCard
     :: ( LiftJuice s
