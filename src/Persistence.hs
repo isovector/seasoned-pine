@@ -31,5 +31,5 @@ saveDB = writeFile "deck.db" . show
 
 
 withDB :: (DB -> IO DB) -> IO ()
-withDB io = loadDB >>= io >>= saveDB
+withDB io = loadOrInitDB >>= io >>= saveDB
 

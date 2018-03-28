@@ -3,21 +3,26 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# OPTIONS_GHC -Wall    #-}
+{-# OPTIONS_GHC -Wall            #-}
 
 module Lib where
 
-import Control.Monad (void)
-import Data.Foldable (for_)
-import Data.Function (fix)
-import Data.Functor.Identity
-import Data.Maybe (listToMaybe)
-import Data.Monoid ((<>))
-import Data.Time (getCurrentTime)
-import Persistence
-import Study
-import System.IO (hSetEcho, stdin)
-import Types
+import           Control.Error.Util
+import           Control.Lens (ala)
+import           Control.Monad (void, guard)
+import           Control.Monad.Trans (lift)
+import           Data.Foldable (for_)
+import           Data.Function (fix)
+import           Data.Functor.Identity
+import qualified Data.Map as M
+import           Data.Maybe (listToMaybe)
+import           Data.Monoid ((<>), Endo (..))
+import           Data.Time (UTCTime(), getCurrentTime, addUTCTime)
+import           Data.Traversable (for)
+import           Persistence
+import           Study
+import           System.IO (hSetEcho, stdin)
+import           Types
 
 
 
@@ -47,9 +52,31 @@ runCard c s = do
   pure $ updateStudy now d s
 
 
-runDatabase :: DB -> IO DB
-runDatabase db = do
-  pure db
+getCardsToReview :: [Card] -> UTCTime -> DB -> [(CardId, Study)]
+getCardsToReview cards now db = do
+  c <- cards
+  let cid = cardId c
+
+  case M.lookup cid db of
+    Just s  -> do
+      guard $ now >= addUTCTime (_sReviewDuration s) (_sLastScheduled s)
+      pure (cid, s)
+    Nothing -> pure (cid, Study (addUTCTime (-1) now) 0 BeingLearned)
+  -- = filter (\(_, Study{..}) -> now >= addUTCTime _sReviewDuration
+  --                                                _sLastScheduled)
+  -- . M.assocs
+
+
+runDatabase :: [Card] -> DB -> IO DB
+runDatabase rawCards db = do
+  let cards = M.fromList $ fmap (\c -> (cardId c, c)) rawCards
+  now <- getCurrentTime
+  let studies = getCardsToReview rawCards now db
+  f <- for studies $ \(cid, s) -> maybeT (pure id) pure $ do
+    c  <- hoistMaybe $ M.lookup cid cards
+    s' <- lift $ runCard c s
+    pure $ M.insert cid s'
+  pure $ ala Endo foldMap f db
 
 
 difficultySelector :: IO Difficulty
@@ -80,6 +107,6 @@ clearScreen :: IO ()
 clearScreen = dumpLines 80
 
 
-someFunc :: IO ()
-someFunc = pure ()
+doReview :: [Card] -> IO ()
+doReview = withDB . runDatabase
 

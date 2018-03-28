@@ -1,24 +1,61 @@
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE RecordWildCards      #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Types where
 
 import Control.Arrow
 import Control.Category (Category (..))
+import Control.Lens
 import Data.Function (on)
 import Data.Functor.Identity
 import Data.List (intercalate)
 import Data.Map (Map)
 import Data.Monoid ((<>))
-import Data.Profunctor
+import Data.Time
 import GHC.Generics
 import Prelude hiding ((.), id)
 
 
 ------------------------------------------------------------------------------
+-- | Bad! but yolo
+instance Read NominalDiffTime where
+  readsPrec _ s =
+    let (a, b) = break (== 's') s
+     in [(fromIntegral (read a :: Int), drop 1 b)]
+
+
+------------------------------------------------------------------------------
+-- | How hard was a 'Card'?
+data Difficulty
+  = Again
+  | Learning
+  | Hard
+  | Medium
+  | Easy
+  deriving (Eq, Ord, Enum, Bounded, Show)
+
+
+------------------------------------------------------------------------------
+-- | What's the status of a 'Card'?
+data Phase = BeingLearned | Learned | Relapsed
+  deriving (Eq, Ord, Show, Enum, Bounded, Read)
+
+
+------------------------------------------------------------------------------
 -- | Super high tech database type.
-type DB = Map CardId ()
+type DB = Map CardId Study
+
+
+------------------------------------------------------------------------------
+-- | Data needed to study a 'Card'.
+data Study = Study
+  { _sLastScheduled  :: UTCTime
+  , _sReviewDuration :: NominalDiffTime
+  , _sPhase          :: Phase
+  } deriving (Eq, Ord, Show, Read)
 
 
 ------------------------------------------------------------------------------
@@ -120,4 +157,7 @@ runIxF = flip runIxF'
 -- | Tag a function with a value, getting an 'IxF'.
 tagged :: z -> (a -> b) -> IxF z a b
 tagged = flip IxF
+
+
+makeLenses ''Study
 

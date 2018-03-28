@@ -18,6 +18,8 @@ dependencies:
 - containers
 - time
 - lens
+- errors
+- mtl
 
 library:
   source-dirs: src

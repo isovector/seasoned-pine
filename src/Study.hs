@@ -1,36 +1,11 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Study where
 
-import Data.Bool (bool)
 import Control.Lens
+import Data.Bool (bool)
 import Data.Time
-
-
-data Difficulty
-  = Again
-  | Learning
-  | Hard
-  | Medium
-  | Easy
-  deriving (Eq, Ord, Enum, Bounded, Show)
-
-data Phase = BeingLearned | Learned | Relapsed
-  deriving (Eq, Ord, Show, Enum, Bounded, Read)
-
-instance Read NominalDiffTime where
-  readsPrec _ s =
-    let (a, b) = break (== 's') s
-     in [(fromIntegral (read a :: Int), drop 1 b)]
-
-
-data Study = Study
-  { _sLastScheduled  :: UTCTime
-  , _sReviewDuration :: NominalDiffTime
-  , _sPhase          :: Phase
-  } deriving (Eq, Ord, Show, Read)
-makeLenses ''Study
+import Types
 
 
 relapseTime :: NominalDiffTime
