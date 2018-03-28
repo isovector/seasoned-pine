@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedLists   #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeApplications  #-}
@@ -20,16 +19,8 @@ import qualified Types as T
 
 T.Verb {..} = getCoeffects
 
-instance IsString (IxF [String] a String) where
+instance Monoid z => IsString (IxF z a String) where
   fromString = pure
-
-instance IsList (IxF [String] a String) where
-  type Item (IxF [String] a String) = IxF [String] a String
-  fromList = foldr (<<>>) (juice $ const mempty)
-  toList   = pure
-
-(<<>>) :: (Monoid z, Monoid b) => IxF z a b -> IxF z a b -> IxF z a b
-(<<>>) = liftA2 (<>)
 
 
 verbs :: [T.VerbNote Identity]
@@ -61,16 +52,16 @@ verbCards = do
   note     <- verbs
   template <-
     [ makeCard
-        ["What is '", vLt, "' (", vCase, ") in English?"]
+        (mconcat ["What is '", vLt, "' (", vCase, ") in English?"])
         vEn
     , makeCard
-        ["What is '", vEn, "' in Lithuanian?"]
+        (mconcat ["What is '", vEn, "' in Lithuanian?"])
         vLt
     , makeCard
-        ["Jis/Ji [", vLt, "]?"]
+        (mconcat ["Jis/Ji [", vLt, "]?"])
         vJisJi
     , makeCard
-        ["Case for ", vLt, "?"]
+        (mconcat ["Case for ", vLt, "?"])
         vCase
     ]
 

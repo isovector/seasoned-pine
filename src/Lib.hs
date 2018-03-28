@@ -65,17 +65,14 @@ cardId Card{..} = CardId $ mconcat
   ]
 
 makeCard
-    :: ( LiftJuice s
-       , IsNote n
+    :: ( IsNote n
        )
-    => s (n Identity) String
-    -> s (n Identity) String
+    => IxF [String] (n Identity) String
+    -> IxF [String] (n Identity) String
     -> n Identity
     -> Card
-makeCard front back n =
-  Card n
-       (juice front)
-       (juice back)
+makeCard front back n = Card n front back
+
 
 runCard :: Card -> IO Difficulty
 runCard c = do
