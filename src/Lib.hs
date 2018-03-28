@@ -22,6 +22,7 @@ import           Data.Traversable (for)
 import           Persistence
 import           Study
 import           System.IO (hSetEcho, stdin)
+import           Test.QuickCheck (generate, shuffle)
 import           Types
 
 
@@ -40,12 +41,13 @@ runCard :: Card -> Study -> IO Study
 runCard c s = do
   clearScreen
   putStrLn $ cardFront c
-  dumpLines 6
+  dumpLines 7
   hSetEcho stdin False
   void getChar
 
   clearScreen
-  putStrLn $ cardBack c
+  putStrLn $ cardFront c
+  putStrLn $ "> " <> cardBack c
   dumpLines 1
   d   <- difficultySelector
   now <- getCurrentTime
@@ -67,8 +69,8 @@ getCardsToReview cards now db = do
 runDatabase :: [Card] -> DB -> IO DB
 runDatabase rawCards db = do
   let cards = M.fromList $ fmap (\c -> (cardId c, c)) rawCards
-  now <- getCurrentTime
-  let studies = getCardsToReview rawCards now db
+  now     <- getCurrentTime
+  studies <- generate . shuffle $ getCardsToReview rawCards now db
   f <- for studies $ \(cid, s) -> maybeT (pure id) pure $ do
     c  <- hoistMaybe $ M.lookup cid cards
     s' <- lift $ runCard c s

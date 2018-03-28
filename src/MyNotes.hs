@@ -65,6 +65,9 @@ verbCards = do
     , makeCard
         (mconcat ["Case for ", vLt, "?"])
         vCase
+    , makeCard
+        (mconcat ["What is the infinitive of this? [", vJisJi, "]"])
+        vLt
     ]
 
   pure $ template note

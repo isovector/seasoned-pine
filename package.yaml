@@ -20,6 +20,7 @@ dependencies:
 - lens
 - errors
 - mtl
+- QuickCheck
 
 library:
   source-dirs: src
