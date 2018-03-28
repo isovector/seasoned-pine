@@ -13,9 +13,10 @@ import           Data.Functor.Identity
 import           Data.Monoid ((<>))
 import           GHC.Exts
 import           Lib
-import           Note
+import qualified MyTypes as T
 import           Prelude hiding (id, (.))
-import qualified Types as T
+import           Types
+
 
 T.Verb {..} = getCoeffects
 

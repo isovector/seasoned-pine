@@ -14,8 +14,8 @@ import Data.Functor.Identity
 import Data.Proxy
 import GHC.Generics
 import GHC.TypeLits
-import Note hiding ((.))
 import Prelude hiding (id, (.))
+import Types
 
 type family Sel f a where
   Sel Identity a = a

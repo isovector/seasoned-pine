@@ -3,13 +3,10 @@
 
 module Persistence where
 
-import Data.Map (Map)
 import qualified Data.Map as M
-import Lib
 import Control.Exception
+import Types
 
-
-type DB = Map CardId ()
 
 initDB :: IO DB
 initDB = do
@@ -17,8 +14,10 @@ initDB = do
   saveDB db
   pure db
 
+
 loadDB :: IO DB
 loadDB = fmap read $ readFile "deck.db"
+
 
 loadOrInitDB :: IO DB
 loadOrInitDB = do
@@ -26,8 +25,10 @@ loadOrInitDB = do
     Left (e :: SomeException) -> initDB
     Right db                  -> pure db
 
+
 saveDB :: DB -> IO ()
 saveDB = writeFile "deck.db" . show
+
 
 withDB :: (DB -> IO DB) -> IO ()
 withDB io = loadDB >>= io >>= saveDB
