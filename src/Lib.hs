@@ -62,9 +62,6 @@ getCardsToReview cards now db = do
       guard $ now >= addUTCTime (_sReviewDuration s) (_sLastScheduled s)
       pure (cid, s)
     Nothing -> pure (cid, Study (addUTCTime (-1) now) 0 BeingLearned)
-  -- = filter (\(_, Study{..}) -> now >= addUTCTime _sReviewDuration
-  --                                                _sLastScheduled)
-  -- . M.assocs
 
 
 runDatabase :: [Card] -> DB -> IO DB

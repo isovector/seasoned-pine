@@ -34,6 +34,7 @@ verbs =
   , T.Verb "gyventi"   "to live"            "kur"         "gyvena"    "UNKNOWN"
   , T.Verb "išsinešti" "to take away"       "ką???"       "išsineša"  "išsinešė"
   , T.Verb "kalbėti"   "to speak"           "ką"          "kalba"     "UNKNOWN"
+  , T.Verb "mokėti"    "to pay for/to know" "ką"          "moka"      "mokėjo"
   , T.Verb "mokytis"   "to learn"           "ko"          "mokosi"    "UNKNOWN"
   , T.Verb "mėgti"     "to like (2)"        "ką"          "mėgsta"    "UNKNOWN"
   , T.Verb "norėti"    "to want"            "ko"          "nori"      "UNKNOWN"
